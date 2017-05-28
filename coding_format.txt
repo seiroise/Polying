@@ -1,0 +1,42 @@
+2017/05/24
+
+コーディング規約　みたいなもの
+
+## 変数名
+プライベートなものは先頭に"_(アンダースコア)"を必ずつける
+パブリックなものは小文字始まりで、節で大文字
+
+## クラス内の配置
+- 未だにregionが見やすいのかよくわからない
+
+public class hoge {
+
+	内部列挙子宣言
+
+	内部クラス/構造体宣言
+
+	シリアライズフィールド
+
+	プライベートフィールド
+
+	パブリックアクセサ
+
+	Unity Event
+
+	Virtual Function
+
+	Private Function
+
+	Public Function
+
+	Callback
+
+	Interface
+}
+
+## namespaceの書き方
+- 基本的に一番上はその作成物をあらわす単語
+- 二番目は機能
+- こんな感じ
+	- Game1.Common
+	- Shooting.Audio
