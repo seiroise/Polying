@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using Common.Common;
+using System;
 
 namespace Common.PixelTerrain {
 
@@ -18,10 +20,24 @@ namespace Common.PixelTerrain {
 	}
 
 	/// <summary>
+	/// 掘られた地形データ
+	/// </summary>
+	public struct Excavated {
+		
+		public Vector2 point;
+		public byte id;
+
+		public Excavated(Vector2 point, byte id) {
+			this.point = point;
+			this.id = id;
+		}
+	}
+
+	/// <summary>
 	/// ピクセル地形
 	/// </summary>
 	[RequireComponent(typeof(PixelChunkPool))]
-	public class PixelTerrain : MonoBehaviour {
+	public class PixelTerrain : SingletonMonoBehaviour<PixelTerrain> {
 
 		/// <summary>
 		/// 有効なチャンクのデータとチャンク
@@ -46,18 +62,33 @@ namespace Common.PixelTerrain {
 		private PixelChunkPool _pixelChunkPool;	//プール
 
 		private float _pixelSize;				//ピクセルの大きさ
+		private PixelDB _pixelDB;				//ピクセルDB
 
 		private Dictionary<XYIndex, PixelChunkData> _chunks;	//全てのチャンクデータ
 		private Dictionary<XYIndex, ActiveChunk> _showChunks;	//表示されているチャンクデータ
 
-		private PixelDB _pixelDB;
+		private List<Excavated> _excavates;						//掘ったピクセルのデータ
 
-		private void Awake() {
+		public PixelDB pixelDB {
+			get {
+				return _pixelDB;
+			}
+		}
+		public bool isExcavated {
+			get {
+				return _excavates.Count > 0;
+			}
+		}
+
+		protected override void SingletonAwake() {
 			_pixelChunkPool = GetComponent<PixelChunkPool>();
+
 			_pixelSize = _chunkSize / _pixelNum;
+			_pixelDB = PixelDB.MakeDefault();
+
 			_chunks = new Dictionary<XYIndex, PixelChunkData>();
 			_showChunks = new Dictionary<XYIndex, ActiveChunk>();
-			_pixelDB = PixelDB.MakeDefault();
+			_excavates = new List<Excavated>();
 		}
 
 		/// <summary>
@@ -74,12 +105,21 @@ namespace Common.PixelTerrain {
 				for(int y = 0; y < _pixelNum; ++y) {
 					float v = Mathf.PerlinNoise(sx + d * x, sy + d * y);
 					if(v >= 0.8f) {
-						pixels[x, y] = 3;
-					} else if(v >= 0.65f) {
-						pixels[x, y] = 1;
-					} else if(v >= 0.5){
+						if(UnityEngine.Random.Range(0, 20) == 0) {
+							//鉄鉱石
+							pixels[x, y] = 10;
+						} else {
+							//硬い岩
+							pixels[x, y] = 3;
+						}
+					} else if(v >= 0.6f) {
+						//そこそこ硬い岩
 						pixels[x, y] = 2;
+					} else if(v >= 0.5){
+						//普通の岩
+						pixels[x, y] = 1;
 					} else {
+						//空間
 						pixels[x, y] = 0;
 					}
 				}
@@ -183,8 +223,8 @@ namespace Common.PixelTerrain {
 		/// 指定した座標の耐久値を減らす
 		/// </summary>
 		/// <param name="point">座標</param>
-		/// <param name="add">減少値</param>
-		public void PointAdd(Vector2 point, int add) {
+		/// <param name="excavation">減少値</param>
+		public void Excavate(Vector2 point, int excavation) {
 			XYIndex index = PointToIndex(point);
 			if(!_chunks.ContainsKey(index)) {
 				MakeChunkFromNoise(index);
@@ -195,7 +235,11 @@ namespace Common.PixelTerrain {
 			x = x >= 0 ? x : x + _pixelNum;
 			y = y >= 0 ? y : y + _pixelNum;
 			//Debug.Log(string.Format("index {0}:{1}  point {2}:{3}",index.x, index.y, x, y));
-			chunk.AddDurability(x, y, add);
+			//chunk.AddDurability(x, y, add);
+			byte id;
+			if(chunk.Excavate(x, y, excavation, out id)) {
+				_excavates.Add(new Excavated(point, id));
+			}
 		}
 
 		/// <summary>
@@ -203,8 +247,8 @@ namespace Common.PixelTerrain {
 		/// </summary>
 		/// <param name="point">中心座標</param>
 		/// <param name="radius">半径</param>
-		/// <param name="add">減少値</param>
-		public void CircleAdd(Vector2 point, float radius, int add) {
+		/// <param name="excavation">減少値</param>
+		public void ExcavateCircle(Vector2 point, float radius, int excavation) {
 			//radius
 			float minx = point.x - radius;
 			float miny = point.y - radius;
@@ -216,10 +260,20 @@ namespace Common.PixelTerrain {
 					p.x = x;
 					p.y = y;
 					if(Vector2.Distance(point, p) <= radius) {
-						PointAdd(p, add);
+						Excavate(p, excavation);
 					}
 				}
 			}
+		}
+
+		/// <summary>
+		/// 掘られた地形データ配列を返す
+		/// </summary>
+		/// <returns>地形データ配列</returns>
+		public Excavated[] GetExcavated() {
+			var temp = _excavates.ToArray();
+			_excavates.Clear();
+			return temp;
 		}
 	}
 }

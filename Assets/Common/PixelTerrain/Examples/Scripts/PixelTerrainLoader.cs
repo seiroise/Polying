@@ -100,7 +100,7 @@ namespace Common.PixelTerrain {
 		/// <summary>
 		/// 地形を更新する中心となるオブジェクトの設定
 		/// </summary>
-		/// <param name="targetObj">Transform.</param>
+		/// <param name="targetObj">ターゲットオブジェクト</param>
 		public void SetTargetObj(Transform targetObj) {
 			_targetObj = targetObj;
 			_terrain.PointToIndex(_targetObj.position.x, _targetObj.position.y, out _chunkx, out _chunky);

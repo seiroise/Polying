@@ -51,9 +51,11 @@ namespace Common.PixelTerrain {
 		/// <returns>作成したデータベース</returns>
 		public static PixelDB MakeDefault() {
 			var db = new PixelDB();
-			db.Add(1, new PixelRecord(1, "rock", 255, 0, new Color32(64, 64, 64, 255), true));
-			db.Add(2, new PixelRecord(2, "surface rock", 128, 0, new Color32(128, 128, 128, 255), true));
-			db.Add(3, new PixelRecord(3, "center rock", 512, 0, new Color32(32, 32, 32, 255), true));
+			db.Add(1, new PixelRecord(1, "rock", 30, 0, new Color32(128, 128, 128, 255), true));
+			db.Add(2, new PixelRecord(2, "middle rock", 100, 0, new Color32(64, 64, 64, 255), true));
+			db.Add(3, new PixelRecord(3, "hard rock", 500, 0, new Color32(32, 32, 32, 255), true));
+
+			db.Add(10, new PixelRecord(10, "iron ore", 200, 0, new Color32(150, 100, 60, 255), true));
 
 			return db;
 		}

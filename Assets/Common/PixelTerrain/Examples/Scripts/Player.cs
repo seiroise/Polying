@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 namespace Common.PixelTerrain {
@@ -15,19 +15,23 @@ namespace Common.PixelTerrain {
 		[SerializeField, Range(1f, 100f)]
 		private float _speed = 1f;
 
+		[SerializeField]
+		private Launcher _lacunher;
+		[SerializeField]
+		private Launcher _bigLacunher;
+
+		[SerializeField]
+		private ItemCollector _collecter;
+
 		private Rigidbody _rBody;
 		private Vector3 _movement;
-
-		private bool _isCollisioned;	//衝突したか
-		private Vector3 contact;		//衝突座標
-
 
 		private void Awake() {
 			_rBody = GetComponent<Rigidbody>();
 		}
 
 		private void Start() {
-			_terrain.CircleAdd(transform.position, 5f, -1024);
+			_terrain.ExcavateCircle(transform.position, 5f, 2000);
 		}
 
 		private void Update() {
@@ -36,16 +40,20 @@ namespace Common.PixelTerrain {
 
 			_rBody.velocity += _movement * _speed * Time.deltaTime;
 
-			if(_isCollisioned) {
-				_terrain.CircleAdd(contact, 0.5f, -10);
-				_isCollisioned = false;
+			if(Input.GetKeyDown(KeyCode.Z)) {
+				if(_lacunher) {
+					_lacunher.Shot();
+				}
 			}
-		}
-
-		private void OnCollisionStay(Collision co) {
-			if(_terrain && !_isCollisioned) {
-				_isCollisioned = true;
-				contact = co.contacts[0].point;
+			if(Input.GetKeyDown(KeyCode.X)) {
+				if(_bigLacunher) {
+					_bigLacunher.Shot();
+				}
+			}
+			if(Input.GetKeyDown(KeyCode.C)) {
+				if(_collecter) {
+					_collecter.Collect();
+				}
 			}
 		}
 	}

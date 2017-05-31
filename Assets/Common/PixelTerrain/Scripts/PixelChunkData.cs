@@ -160,7 +160,6 @@ namespace Common.PixelTerrain {
 						baseI6 = cnt * 6;
 
 						color = pixel.color;
-						color.a = (byte)(pixel.durability < 256 ? pixel.durability : 255);
 
 						positions[baseI4] = basePos + new Vector3(0f, 1f) * pixelSize;
 						positions[baseI4 + 1] = basePos + new Vector3(1f, 1f) * pixelSize;
@@ -226,19 +225,23 @@ namespace Common.PixelTerrain {
 		}
 
 		/// <summary>
-		/// 指定した座標の耐久値を変更する
+		/// 指定した座標の耐久値を変更する。その座標のピクセルが変化した場合はtrueを返す。
 		/// </summary>
+		/// <returns>変化した場合はtrueを返す</returns>
 		/// <param name="x">x座標</param>
 		/// <param name="y">y座標</param>
 		/// <param name="durability">新しい耐久値</param>
-		public void DurabilityAt(int x, int y, int durability) {
+		public bool DurabilityAt(int x, int y, int durability) {
 			var pixel = _pixels[x + 1, y + 1];
 			var temp = pixel.durability;
 			pixel.durability = durability;
 
 			//更新フラグ
-			_isUpdated = true;
+			if(pixel.isDraw) {
+				_isUpdated = true;
+			}
 
+			bool flag = false;
 			if(temp > 0 && durability <= 0) {
 				//ピクセルの状態を変化
 				var toID = _db.Get(pixel.id).toID;
@@ -252,8 +255,10 @@ namespace Common.PixelTerrain {
 						++_draws;
 					}
 					_pixels[x + 1, y + 1] = pixel;
+					flag = true;
 				}
 			}
+			return flag;
 		}
 
 		/// <summary>
@@ -264,6 +269,19 @@ namespace Common.PixelTerrain {
 		/// <param name="add">加算値</param>
 		public void AddDurability(int x, int y, int add) {
 			DurabilityAt(x, y, DurabilityAt(x, y) + add);
+		}
+
+		/// <summary>
+		/// 指定した座標の耐久値を指定した値だけ減らす
+		/// </summary>
+		/// <returns>座標の耐久値が0になった場合true</returns>
+		/// <param name="x">x座標</param>
+		/// <param name="y">y座標</param>
+		/// <param name="excavation">減らす値</param>
+		/// <param name="id">減らした座標の識別番号</param>
+		public bool Excavate(int x, int y, int excavation, out byte id) {
+			id = IDAt(x, y);
+			return DurabilityAt(x, y, DurabilityAt(x, y) - excavation);
 		}
 	}
 }
