@@ -39,11 +39,12 @@ Shader "CustomShader/PolygonAnimation" {
 
 			//バーテックスシェーダからジオメトリ、フラグメントシェーダの入力
 			struct v2f {
-				float4 vertex	: SV_POSITION;
-				float2 uv		: TEXCOORD0;
-				float3 normal	: NORMAL;
-				float3 worldPosition	: TEXCOORD1;
-				float4 color	: TEXCOORD2;			//色
+				float4 vertex			: SV_POSITION;
+				float2 uv				: TEXCOORD0;
+				float3 normal			: NORMAL;
+				float3 localPosition	: TEXCOORD1;
+				float3 worldPosition	: TEXCOORD2;
+				float4 color			: TEXCOORD3;
 			};
 
 			//プロパティの受取
@@ -129,6 +130,7 @@ Shader "CustomShader/PolygonAnimation" {
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
 				o.uv = v.uv;
 				o.normal = v.normal;
+				o.localPosition = v.vertex.xyz;
 				o.worldPosition = mul(unity_ObjectToWorld, v.vertex).xyz;
 				o.color = 0.0;
 				return o;
@@ -143,18 +145,18 @@ Shader "CustomShader/PolygonAnimation" {
 						 input[2].worldPosition.xyz - input[0].worldPosition.xyz));
 				
 				float3 hsv = float3(1, 1, 1);
-				//float2 sumUV = input[0].uv + input[1].uv + input[2].uv;
-				float2 sumXY = input[0].vertex.xy + input[1].vertex.xy + input[2].vertex.xy;
-				float rNum = rand(sumXY);
+				//float2 sum = input[0].uv + input[1].uv + input[2].uv;
+				float2 sum = input[0].localPosition.xy + input[1].localPosition.xy + input[2].localPosition.xy;
+				float rNum = rand(sum);
 				float offset = sin((_Time + rNum) * _TimeScale) * _Randomness;
 
 				//乱数からそれぞれの値を生成
-				hsv.x = randRange(_HueMin, _HueMax, sumXY);
+				hsv.x = randRange(_HueMin, _HueMax, sum);
 				//彩度
-				hsv.y = randRange(_SatMin + offset, _SatMax + offset, sumXY);
+				hsv.y = randRange(_SatMin + offset, _SatMax + offset, sum);
 
 				//明度
-				hsv.z = randRange(_ValMin + offset, _ValMax + offset, sumXY);
+				hsv.z = randRange(_ValMin + offset, _ValMax + offset, sum);
 
 				//HSVをRGBに変換
 				float4 rgba = float4(hsv2rgb(hsv), 1);

@@ -12,12 +12,12 @@ namespace Common.PixelTerrain {
 		[SerializeField, Range(1f, 20f)]
 		private float _speed = 10f;
 
-		private byte _id;
+		private int _id;
 		private string _itemName;
 		private SpriteRenderer _sprite;
 		private ItemCollector _targetCollector;
 
-		public byte id {
+		public int id {
 			get {
 				return _id;
 			}

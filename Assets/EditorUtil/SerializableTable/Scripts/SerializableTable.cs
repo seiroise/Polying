@@ -15,7 +15,6 @@ namespace EditorUtil {
 		protected Dictionary<TKey, TValue> _table;
 
 		public SerializableTable() {
-			Debug.Log("Constructor");
 			Clear();
 		}
 
@@ -23,7 +22,6 @@ namespace EditorUtil {
 		/// 指定したkeyに対するvalueの取得
 		/// </summary>
 		public TValue Get(TKey key) {
-			Debug.Log(_table);
 			if(_table.ContainsKey(key)) {
 				return _table[key];
 			}

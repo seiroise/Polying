@@ -20,16 +20,31 @@ namespace Common.PixelTerrain {
 	}
 
 	/// <summary>
-	/// 掘られた地形データ
+	/// 変化したピクセルのデータ
 	/// </summary>
-	public struct Excavated {
+	public struct ChangedPixelData {
 		
 		public Vector2 point;
-		public byte id;
+		public int id;
 
-		public Excavated(Vector2 point, byte id) {
+		public ChangedPixelData(Vector2 point, int id) {
 			this.point = point;
 			this.id = id;
+		}
+	}
+
+	/// <summary>
+	/// レイのヒットしたピクセルに関する情報
+	/// </summary>
+	public class HitPixelInfo {
+		public PixelData pixel;
+		public Vector2 pixelPoint;
+		public float distance;
+
+		public HitPixelInfo(PixelData pixel, Vector2 pixelPoint, float distance) {
+			this.pixel = pixel;
+			this.pixelPoint = pixelPoint;
+			this.distance = distance;
 		}
 	}
 
@@ -59,115 +74,102 @@ namespace Common.PixelTerrain {
 		[SerializeField, Range(1, 128)]
 		private int _pixelNum = 8;				//チャンク内の縦横のピクセル数
 
-		private PixelChunkPool _pixelChunkPool;	//プール
+		[Header("PixelDBData")]
+		[SerializeField]
+		private PixelDBDataObject _dbData;
+
+		private PixelChunkPool _pixelChunkPool;	//オブジェクトのプール
+
+		private PixelDB _pixelDB;				//ピクセルDB
+		private PixelTerrainBuilder _builder;	//地形の作成
 
 		private float _pixelSize;				//ピクセルの大きさ
-		private PixelDB _pixelDB;				//ピクセルDB
 
 		private Dictionary<XYIndex, PixelChunkData> _chunks;	//全てのチャンクデータ
 		private Dictionary<XYIndex, ActiveChunk> _showChunks;	//表示されているチャンクデータ
 
-		private List<Excavated> _excavates;						//掘ったピクセルのデータ
+		private List<ChangedPixelData> _changes;				//変化したピクセルのデータ
 
+		public float chunkSize {
+			get {
+				return _chunkSize;
+			}
+		}
+		public int pixelNum {
+			get {
+				return _pixelNum;
+			}
+		}
 		public PixelDB pixelDB {
 			get {
 				return _pixelDB;
 			}
+			set {
+				_pixelDB = value;
+			}
 		}
 		public bool isExcavated {
 			get {
-				return _excavates.Count > 0;
+				return _changes.Count > 0;
 			}
 		}
 
 		protected override void SingletonAwake() {
 			_pixelChunkPool = GetComponent<PixelChunkPool>();
 
-			_pixelSize = _chunkSize / _pixelNum;
-			_pixelDB = PixelDB.MakeDefault();
+			if(_dbData) {
+				_pixelDB = _dbData.MakeDB();
+			} else {
+				_pixelDB = PixelDB.MakeDefault();
+			}
+			_builder = new NoiseBuilder(this);
 
+			_pixelSize = _chunkSize / _pixelNum;
 			_chunks = new Dictionary<XYIndex, PixelChunkData>();
 			_showChunks = new Dictionary<XYIndex, ActiveChunk>();
-			_excavates = new List<Excavated>();
+			_changes = new List<ChangedPixelData>();
 		}
 
-		/// <summary>
-		/// 指定したインデックスのチャンクデータをパーリンノイズから作成する
-		/// </summary>
-		/// <returns>PixelChunk</returns>
-		/// <param name="sx">開始x座標</param>
-		/// <param name="sy">開始y座標</param>
-		/// <param name="size">大きさ</param>
-		private PixelChunkData MakeChunkFromNoise(float sx, float sy, float size) {
-			float d = size / _pixelNum;
-			byte[,] pixels = new byte[_pixelNum, _pixelNum];
-			for(int x = 0; x < _pixelNum; ++x) {
-				for(int y = 0; y < _pixelNum; ++y) {
-					float v = Mathf.PerlinNoise(sx + d * x, sy + d * y);
-					if(v >= 0.8f) {
-						if(UnityEngine.Random.Range(0, 20) == 0) {
-							//鉄鉱石
-							pixels[x, y] = 10;
-						} else {
-							//硬い岩
-							pixels[x, y] = 3;
-						}
-					} else if(v >= 0.6f) {
-						//そこそこ硬い岩
-						pixels[x, y] = 2;
-					} else if(v >= 0.5){
-						//普通の岩
-						pixels[x, y] = 1;
-					} else {
-						//空間
-						pixels[x, y] = 0;
-					}
-				}
-			}
-			return PixelChunkData.FromSquareArray(pixels, _pixelDB);
-		}
+		#region Chunk Function
 
 		/// <summary>
-		/// 指定したインデックスのチャンクデータをパーリンノイズから作成する
+		/// 指定したインデックスのチャンクデータを作成する
 		/// </summary>
-		/// <param name="index">インデックス</param>
-		private PixelChunkData MakeChunkFromNoise(XYIndex index) {
-			var chunkData = MakeChunkFromNoise(index.x, index.y, 1f);
+		/// <returns>作成したチャンクデータ</returns>
+		private void MakeChunk(XYIndex index) {
+			if(_chunks.ContainsKey(index)) return;
+			var idArray = _builder.MakeIDArray(index);
+			var chunkData = PixelChunkData.MakeSquareArray(idArray, _pixelDB);
 			_chunks.Add(index, chunkData);
-			return chunkData;
 		}
 
 		/// <summary>
-		/// 指定したインデックスの指定したデータのPixelChunkを表示する
+		/// 指定したインデックスに対応するチャンクを返す
 		/// </summary>
-		/// <param name="index">添字</param>
-		/// <param name="chunkData">chunkデータ</param>
-		private void ShowChunk(XYIndex index, PixelChunkData chunkData) {
-			var pixelChunk = _pixelChunkPool.Get();
-			_showChunks.Add(index, new ActiveChunk(chunkData, pixelChunk));
-
-			pixelChunk.pixelSize = _pixelSize;
-			pixelChunk.gameObject.SetActive(true);
-			pixelChunk.SetPixelChunkData(chunkData);
-			pixelChunk.transform.localPosition = new Vector3(index.x * _chunkSize, index.y * _chunkSize);
+		/// <returns>インデックスに対応するチャンク</returns>
+		/// <param name="chunkIndex">インデックス</param>
+		private PixelChunkData GetChunk(XYIndex chunkIndex) {
+			if(!_chunks.ContainsKey(chunkIndex)) {
+				MakeChunk(chunkIndex);
+			}
+			return _chunks[chunkIndex];
 		}
 
 		/// <summary>
 		/// 指定したインデックスのチャンクを表示する
 		/// </summary>
-		/// <param name="index">座標</param>
+		/// <param name="index">インデックス</param>
 		public void ShowChunk(XYIndex index) {
-			if(_chunks.ContainsKey(index)) {
-				//読み込まれているチャンクを表示
-				if(!_showChunks.ContainsKey(index)) {
-					//すでに表示されていないチャンク以外
-					var chunkData = _chunks[index];
-					ShowChunk(index, chunkData);
-				}
-			} else {
-				//読み込まれていないチャンクを表示
-				ShowChunk(index, MakeChunkFromNoise(index));
+			var pixelChunk = _pixelChunkPool.Get();
+			if(!_chunks.ContainsKey(index)) {
+				MakeChunk(index);
 			}
+			var chunkData = _chunks[index];
+			_showChunks.Add(index, new ActiveChunk(chunkData, pixelChunk));
+			pixelChunk.pixelSize = _pixelSize;
+			pixelChunk.gameObject.SetActive(true);
+			pixelChunk.SetPixelChunkData(chunkData, _dbData.material);
+			pixelChunk.transform.localPosition = new Vector3(index.x * _chunkSize, index.y * _chunkSize);
 		}
 
 		/// <summary>
@@ -181,6 +183,133 @@ namespace Common.PixelTerrain {
 				_showChunks.Remove(index);
 			}
 		}
+
+		#endregion
+
+		#region Pixel Function
+
+		/// <summary>
+		/// 指定した座標のピクセルIDを変更する
+		/// </summary>
+		/// <param name="point">座標</param>
+		/// <param name="id">ピクセルID</param>
+		public void SetPixel(Vector2 point, int id) {
+			if(_pixelDB.GetRecord(id) == null) return;
+			XYIndex index = PointToIndex(point);
+			if(!_chunks.ContainsKey(index)) {
+				MakeChunk(index);
+			}
+			var chunk = _chunks[index];
+
+			int x, y;
+			PointToPixelIndex(point.x, point.y, out x, out y);
+
+			chunk.SetPixel(x, y, id);
+		}
+
+		/// <summary>
+		/// 指定した座標のピクセルを返す
+		/// </summary>
+		/// <returns>The pixel.</returns>
+		/// <param name="point">Point.</param>
+		private PixelData GetPixel(Vector2 point) {
+			XYIndex index = PointToIndex(point);
+			if(!_chunks.ContainsKey(index)) {
+				MakeChunk(index);
+			}
+			var chunk = _chunks[index];
+
+			int x, y;
+			PointToPixelIndex(point.x, point.y, out x, out y);
+
+			return chunk.GetCopiedPixel(x, y);
+		}
+
+		/// <summary>
+		/// 指定した座標のピクセルの耐久値を減らす
+		/// </summary>
+		/// <param name="point">座標</param>
+		/// <param name="excavation">減少値</param>
+		public void ReduceDurability(Vector2 point, int excavation) {
+			XYIndex index = PointToIndex(point);
+			if(!_chunks.ContainsKey(index)) {
+				MakeChunk(index);
+			}
+			var chunk = _chunks[index];
+
+			int x, y;
+			PointToPixelIndex(point.x, point.y, out x, out y);
+
+			int id;
+			if(chunk.ReduceDurability(x, y, excavation, out id)) {
+				_changes.Add(new ChangedPixelData(point, id));
+			}
+		}
+
+		/// <summary>
+		/// 指定した円の範囲の耐久値を減らす
+		/// </summary>
+		/// <param name="point">中心座標</param>
+		/// <param name="radius">半径</param>
+		/// <param name="excavation">減少値</param>
+		public void ReduceDurabilityInCircle(Vector2 point, float radius, int excavation) {
+			//radius
+			float minx = point.x - radius;
+			float miny = point.y - radius;
+			float maxx = minx + radius * 2;
+			float maxy = miny + radius * 2;
+			Vector2 p = Vector2.zero;
+			for(float x = minx; x < maxx; x += _pixelSize) {
+				for(float y = miny; y < maxy; y += _pixelSize) {
+					p.x = x;
+					p.y = y;
+					if(Vector2.Distance(point, p) <= radius) {
+						ReduceDurability(p, excavation);
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// 変化したピクセルのデータ配列を返す
+		/// </summary>
+		/// <returns>地形データ配列</returns>
+		public ChangedPixelData[] GetChanges() {
+			var temp = _changes.ToArray();
+			_changes.Clear();
+			return temp;
+		}
+
+		/// <summary>
+		/// ピクセル版のレイ
+		/// </summary>
+		/// <returns>The ray.</returns>
+		/// <param name="origin">Origin.</param>
+		/// <param name="direction">Direction.</param>
+		/// <param name="distance">Distance.</param>
+		/// <param name="hitInfo">Hit info.</param>
+		public bool Ray(Vector2 origin, Vector2 direction, float distance, out HitPixelInfo hitInfo) {
+			Vector2 normRay = direction.normalized * _pixelSize;
+			float expDis = 0f;
+			Vector2 point = Vector2.zero;
+			hitInfo = null;
+
+			for(; expDis < distance; expDis += _pixelSize) {
+				point.x += normRay.x;
+				point.y += normRay.y;
+				var pixel = GetPixel(point);
+				if(pixel.isDraw) {
+					//衝突
+					hitInfo = new HitPixelInfo(pixel, origin, Vector2.Distance(origin, point));
+					return true;
+				}
+			}
+			return false;
+		}
+
+		#endregion
+
+		#region Convert Function
 
 		/// <summary>
 		/// 座標からインデックスに変換する
@@ -206,10 +335,41 @@ namespace Common.PixelTerrain {
 		}
 
 		/// <summary>
+		/// 座標からピクセルインデックスに変換する
+		/// </summary>
+		/// <param name="x">x座標</param>
+		/// <param name="y">y座標</param>
+		/// <param name="pixelx">ピクセルx座標</param>
+		/// <param name="pixely">ピクセルy座標</param>
+		public void PointToPixelIndex(float x, float y, out int pixelx, out int pixely) {
+			int px = Mathf.FloorToInt(x / _pixelSize) % _pixelNum;
+			int py = Mathf.FloorToInt(y / _pixelSize) % _pixelNum;
+			pixelx = px >= 0 ? px : px + _pixelNum;
+			pixely = py >= 0 ? py : py + _pixelNum;
+		}
+
+		/// <summary>
+		/// 座標からピクセルインデックスに変換する
+		/// </summary>
+		/// <returns>ピクセルインデックス</returns>
+		/// <param name="point">座標</param>
+		public XYIndex PointToPixelIndex(Vector2 point) {
+			int px = Mathf.FloorToInt(point.x / _pixelSize) % _pixelNum;
+			int py = Mathf.FloorToInt(point.y / _pixelSize) % _pixelNum;
+			return new XYIndex(
+				px >= 0 ? px : px + _pixelNum,
+				py >= 0 ? py : py + _pixelNum);
+		}
+
+		#endregion
+
+		#region Utility Function
+
+		/// <summary>
 		/// 表示されているチャンクのインデックス配列を取得する
 		/// </summary>
 		/// <returns>インデックス配列</returns>
-		public XYIndex[] ShowChunkIndex() {
+		public XYIndex[] GetShowChunkIndices() {
 			XYIndex[] indices = new XYIndex[_showChunks.Count];
 			var i = 0;
 			foreach(var index in _showChunks.Keys) {
@@ -220,60 +380,23 @@ namespace Common.PixelTerrain {
 		}
 
 		/// <summary>
-		/// 指定した座標の耐久値を減らす
+		/// 指定した座標に構造物を建てる
 		/// </summary>
-		/// <param name="point">座標</param>
-		/// <param name="excavation">減少値</param>
-		public void Excavate(Vector2 point, int excavation) {
-			XYIndex index = PointToIndex(point);
-			if(!_chunks.ContainsKey(index)) {
-				MakeChunkFromNoise(index);
-			}
-			PixelChunkData chunk = _chunks[index];
-			int x = Mathf.FloorToInt(point.x / _pixelSize) % _pixelNum;
-			int y = Mathf.FloorToInt(point.y / _pixelSize) % _pixelNum;
-			x = x >= 0 ? x : x + _pixelNum;
-			y = y >= 0 ? y : y + _pixelNum;
-			//Debug.Log(string.Format("index {0}:{1}  point {2}:{3}",index.x, index.y, x, y));
-			//chunk.AddDurability(x, y, add);
-			byte id;
-			if(chunk.Excavate(x, y, excavation, out id)) {
-				_excavates.Add(new Excavated(point, id));
-			}
-		}
+		/// <param name="structure">構造物データ</param>
+		public void BuildStructure(Vector2 point, StructureData structure) {
+			int xlen = structure.idArray.GetLength(0);
+			int ylen = structure.idArray.GetLength(1);
+			Vector2 offset = Vector2.zero;
 
-		/// <summary>
-		/// 指定した円の範囲の耐久値を減らす
-		/// </summary>
-		/// <param name="point">中心座標</param>
-		/// <param name="radius">半径</param>
-		/// <param name="excavation">減少値</param>
-		public void ExcavateCircle(Vector2 point, float radius, int excavation) {
-			//radius
-			float minx = point.x - radius;
-			float miny = point.y - radius;
-			float maxx = minx + radius * 2;
-			float maxy = miny + radius * 2;
-			Vector2 p = Vector2.zero;
-			for(float x = minx; x < maxx; x += _pixelSize) {
-				for(float y = miny; y < maxy; y += _pixelSize) {
-					p.x = x;
-					p.y = y;
-					if(Vector2.Distance(point, p) <= radius) {
-						Excavate(p, excavation);
-					}
+			for(int x = 0; x < xlen; ++x) {
+				for(int y = 0; y < ylen; ++y) {
+					offset.y += _pixelSize;
+					SetPixel(point + offset, structure.idArray[x, y]);
 				}
+				offset.x += _pixelSize;
 			}
 		}
 
-		/// <summary>
-		/// 掘られた地形データ配列を返す
-		/// </summary>
-		/// <returns>地形データ配列</returns>
-		public Excavated[] GetExcavated() {
-			var temp = _excavates.ToArray();
-			_excavates.Clear();
-			return temp;
-		}
+		#endregion
 	}
 }

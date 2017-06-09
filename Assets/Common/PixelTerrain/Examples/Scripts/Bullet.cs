@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 
 namespace Common.PixelTerrain {
@@ -27,7 +27,7 @@ namespace Common.PixelTerrain {
 		private void OnCollisionEnter(Collision co) {
 			var terrain = PixelTerrain.instance;
 			if(terrain) {
-				terrain.ExcavateCircle(co.contacts[0].point, excavateArea, excavate);
+				terrain.ReduceDurabilityInCircle(co.contacts[0].point, excavateArea, excavate);
 			}
 			if(_effect) {
 				Instantiate(_effect, transform.position, transform.rotation);

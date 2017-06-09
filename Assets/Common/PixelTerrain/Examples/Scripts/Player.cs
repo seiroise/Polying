@@ -13,7 +13,9 @@ namespace Common.PixelTerrain {
 		private PixelTerrain _terrain;
 
 		[SerializeField, Range(1f, 100f)]
-		private float _speed = 1f;
+		private float _moveSpeed = 1f;
+		[SerializeField, Range(1f, 500f)]
+		private float _rotateSpeed = 200f;
 
 		[SerializeField]
 		private Launcher _lacunher;
@@ -24,22 +26,36 @@ namespace Common.PixelTerrain {
 		private ItemCollector _collecter;
 
 		private Rigidbody _rBody;
-		private Vector3 _movement;
+		private Vector3 _inputAxis;
+		private bool _inputedAxis;
 
 		private void Awake() {
 			_rBody = GetComponent<Rigidbody>();
 		}
 
 		private void Start() {
-			_terrain.ExcavateCircle(transform.position, 5f, 2000);
+			_terrain.ReduceDurabilityInCircle(transform.position, 5f, 2000);
+		}
+
+		private void FixedUpdate() {
+			Rotation();
+			Move();
 		}
 
 		private void Update() {
-			_movement.x = Input.GetAxis("Horizontal");
-			_movement.y = Input.GetAxis("Vertical");
+			InputKey();
+		}
 
-			_rBody.velocity += _movement * _speed * Time.deltaTime;
+		/// <summary>
+		/// キー入力
+		/// </summary>
+		private void InputKey() {
+			//軸入力
+			_inputAxis.x = Input.GetAxis("Horizontal");
+			_inputAxis.y = Input.GetAxis("Vertical");
+			_inputedAxis = _inputAxis.magnitude > 0.1f;
 
+			//ボタン入力
 			if(Input.GetKeyDown(KeyCode.Z)) {
 				if(_lacunher) {
 					_lacunher.Shot();
@@ -55,6 +71,40 @@ namespace Common.PixelTerrain {
 					_collecter.Collect();
 				}
 			}
+			if(Input.GetKeyDown(KeyCode.V)) {
+				if(_terrain) {
+					HitPixelInfo hitInfo;
+					if(_terrain.Ray(transform.position, transform.right, 100f, out hitInfo)) {
+						Debug.Log(string.Format("hit id:{0} point:{1}", hitInfo.pixel.id, hitInfo.pixelPoint));
+					} else {
+						Debug.Log("no hit");
+					}
+				}
+			}
+
+		}
+
+		/// <summary>
+		/// 回転処理
+		/// </summary>
+		private void Rotation() {
+			if(!_inputedAxis) return;
+			float angle = Mathf.Atan2(_inputAxis.y, _inputAxis.x) * Mathf.Rad2Deg;
+			float delta = Mathf.DeltaAngle(transform.eulerAngles.z, angle) * Mathf.Deg2Rad * 0.5f;
+
+			// sin補間
+			float y = Mathf.Sin(delta);
+
+			//_rBody.AddTorque(0f, 0f, y * 50f * Time.deltaTime);
+			_rBody.angularVelocity = new Vector3(0f, 0f, y * _rotateSpeed * Time.deltaTime);
+		}
+
+		/// <summary>
+		/// 移動処理
+		/// </summary>
+		private void Move() {
+			if(!_inputedAxis) return;
+			_rBody.velocity += transform.right * _moveSpeed * Time.deltaTime;
 		}
 	}
 }
