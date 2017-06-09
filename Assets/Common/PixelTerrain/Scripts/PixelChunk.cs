@@ -13,9 +13,8 @@ namespace Common.PixelTerrain {
 		[Header("Rendering Parameter")]
 		[SerializeField, Range(0.1f, 1f)]
 		private float _pixelSize = 0.25f;			//描画時のピクセルの大きさ
-		[SerializeField]
-		private Material _material;					//描画マテリアル
 
+		private Material _material;					//描画マテリアル
 		private MeshCollider _meshCollider;			//当たり判定
 		private PixelChunkData _chunkData;
 		private Mesh _mesh;
@@ -66,8 +65,9 @@ namespace Common.PixelTerrain {
 		/// PixelChunkDataを設定する
 		/// </summary>
 		/// <param name="data">データ</param>
-		public void SetPixelChunkData(PixelChunkData data) {
+		public void SetPixelChunkData(PixelChunkData data, Material material) {
 			this._chunkData = data;
+			this._material = material;
 			UpdateMesh();
 		}
 	}

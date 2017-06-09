@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 namespace Common.PixelTerrain {
@@ -80,7 +80,7 @@ namespace Common.PixelTerrain {
 			}
 
 			//現在表示中のチャンクから被らない添字を非表示に
-			var indices = _terrain.ShowChunkIndex();
+			var indices = _terrain.GetShowChunkIndices();
 			for(int i = 0; i < indices.Length; ++i) {
 				if(showIndices.Contains(indices[i])) {
 					//すでに表示している添字は取り除く

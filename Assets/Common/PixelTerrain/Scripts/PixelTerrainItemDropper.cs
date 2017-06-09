@@ -28,11 +28,11 @@ namespace Common.PixelTerrain {
 		/// </summary>
 		private void DropItemFromTerrain() {
 			if(_terrain && _terrain.isExcavated) {
-				var excavated = _terrain.GetExcavated();
+				var excavated = _terrain.GetChanges();
 				for(int i = 0; i < excavated.Length; ++i) {
 					var item = Instantiate<DropItem>(_itemPrefab);
 					item.transform.position = excavated[i].point;
-					var record = _terrain.pixelDB.Get(excavated[i].id);
+					var record = _terrain.pixelDB.GetCopiedRecord(excavated[i].id);
 					item.itemName = record.name;
 					item.id = excavated[i].id;
 					item.sprite.color = record.color;
