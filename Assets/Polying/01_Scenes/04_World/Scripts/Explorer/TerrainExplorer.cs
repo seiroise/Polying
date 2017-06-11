@@ -14,6 +14,10 @@ namespace Polying.World {
 		private TerrainChecker _checker;
 		private RigidbodyController _controller;
 
+		private float _checkInterval = 0.5f;
+		private float _checkTimer;
+		private HitPixelInfo[] _hitInfos;
+
 		private void Awake() {
 			_checker = GetComponent<TerrainChecker>();
 			_controller = GetComponent<RigidbodyController>();
@@ -22,18 +26,13 @@ namespace Polying.World {
 			_controller.SetAxis(testAxis.x, testAxis.y);
 		}
 
-		private void Start() {
-			_checker.frontDetected.RemoveListener(OnCheckFront);
-			_checker.frontDetected.AddListener(OnCheckFront);
-		}
-
-		/// <summary>
-		/// 前方確認
-		/// </summary>
-		private void OnCheckFront(HitPixelInfo hitInfo) {
-			Vector2 dir;
-			_checker.SolveFrontDirection(out dir);
-			_controller.SetAxis(dir.x, dir.y);
+		private void Update() {
+			_checkTimer -= Time.deltaTime;
+			if(_checkTimer <= 0f) {
+				Vector2 dir;
+				_checker.SolveFrontDirection(out dir);
+				_controller.SetAxis(dir.x, dir.y);
+			}
 		}
 	}
 }
