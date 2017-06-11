@@ -47,13 +47,7 @@ namespace Polying.World {
 
 		private void Awake() {
 			if(_frontDirs == null) {
-				_frontDirs = AngleToDirection(FloatRange(-10f, 10f, 5f).ToArray());
-			}
-		}
-
-		private void Update() {
-			_checkTimer -= Time.deltaTime;
-			if(_checkTimer <= 0f) {
+				_frontDirs = AngleToDirection(FloatRange(-50f, 50f, 5f).ToArray());
 			}
 		}
 
@@ -116,7 +110,7 @@ namespace Polying.World {
 				float[] evals = new float[hitInfos.Length];
 				for(int i = 0; i < hitInfos.Length; ++i) {
 					if(hitInfos[i] == null) {
-						evals[i] = 1.5f;
+						evals[i] = 1.2f;
 					} else {
 						evals[i] = hitInfos[i].distance / _checkDistance;
 					}
@@ -139,7 +133,11 @@ namespace Polying.World {
 					dir = new Vector2(0f, 0f);
 					return false;
 				} else {
-					dir = hitInfos[maxIndex].direction;
+					if(hitInfos[maxIndex] != null) {
+						dir = hitInfos[maxIndex].direction;
+					} else {
+						dir = transform.rotation * _frontDirs[maxIndex];
+					}
 					return true;
 				}
 			} else {
