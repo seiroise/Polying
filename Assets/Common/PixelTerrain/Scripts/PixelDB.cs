@@ -63,7 +63,9 @@ namespace Common.PixelTerrain {
 		/// <returns>コピーしたデータ</returns>
 		/// <param name="id">識別番号</param>
 		public PixelDBRecord GetCopiedRecord(int id) {
-			return _pixelDB[id].Clone();
+			PixelDBRecord rec;
+			_pixelDB.TryGetValue(id, out rec);
+			return rec.Clone();
 		}
 
 		/// <summary>
@@ -72,7 +74,9 @@ namespace Common.PixelTerrain {
 		/// <returns>元データ</returns>
 		/// <param name="id">識別番号</param>
 		public PixelDBRecord GetRecord(int id) {
-			return _pixelDB[id];
+			PixelDBRecord rec;
+			_pixelDB.TryGetValue(id, out rec);
+			return rec;
 		}
 
 		/// <summary>
