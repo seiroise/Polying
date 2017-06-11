@@ -39,11 +39,13 @@ namespace Common.PixelTerrain {
 	public class HitPixelInfo {
 		public PixelData pixel;
 		public Vector2 pixelPoint;
+		public Vector2 direction;
 		public float distance;
 
-		public HitPixelInfo(PixelData pixel, Vector2 pixelPoint, float distance) {
+		public HitPixelInfo(PixelData pixel, Vector2 pixelPoint, Vector2 direction, float distance) {
 			this.pixel = pixel;
 			this.pixelPoint = pixelPoint;
+			this.direction = direction;
 			this.distance = distance;
 		}
 	}
@@ -136,23 +138,25 @@ namespace Common.PixelTerrain {
 		/// 指定したインデックスのチャンクデータを作成する
 		/// </summary>
 		/// <returns>作成したチャンクデータ</returns>
-		private void MakeChunk(XYIndex index) {
-			if(_chunks.ContainsKey(index)) return;
+		private PixelChunkData MakeChunk(XYIndex index) {
+			PixelChunkData chunkData;
 			var idArray = _builder.MakeIDArray(index);
-			var chunkData = PixelChunkData.MakeSquareArray(idArray, _pixelDB);
+			chunkData = PixelChunkData.MakeSquareArray(idArray, _pixelDB);
 			_chunks.Add(index, chunkData);
+			return chunkData;
 		}
 
 		/// <summary>
 		/// 指定したインデックスに対応するチャンクを返す
 		/// </summary>
 		/// <returns>インデックスに対応するチャンク</returns>
-		/// <param name="chunkIndex">インデックス</param>
-		private PixelChunkData GetChunk(XYIndex chunkIndex) {
-			if(!_chunks.ContainsKey(chunkIndex)) {
-				MakeChunk(chunkIndex);
+		/// <param name="index">インデックス</param>
+		private PixelChunkData GetChunk(XYIndex index) {
+			PixelChunkData chunk;
+			if(!_chunks.TryGetValue(index, out chunk)) {
+				chunk = MakeChunk(index);
 			}
-			return _chunks[chunkIndex];
+			return chunk;
 		}
 
 		/// <summary>
@@ -161,10 +165,7 @@ namespace Common.PixelTerrain {
 		/// <param name="index">インデックス</param>
 		public void ShowChunk(XYIndex index) {
 			var pixelChunk = _pixelChunkPool.Get();
-			if(!_chunks.ContainsKey(index)) {
-				MakeChunk(index);
-			}
-			var chunkData = _chunks[index];
+			var chunkData = GetChunk(index);
 			_showChunks.Add(index, new ActiveChunk(chunkData, pixelChunk));
 			pixelChunk.pixelSize = _pixelSize;
 			pixelChunk.gameObject.SetActive(true);
@@ -196,33 +197,36 @@ namespace Common.PixelTerrain {
 		public void SetPixel(Vector2 point, int id) {
 			if(_pixelDB.GetRecord(id) == null) return;
 			XYIndex index = PointToIndex(point);
-			if(!_chunks.ContainsKey(index)) {
-				MakeChunk(index);
-			}
-			var chunk = _chunks[index];
-
+			var chunk = GetChunk(index);
 			int x, y;
 			PointToPixelIndex(point.x, point.y, out x, out y);
-
 			chunk.SetPixel(x, y, id);
 		}
 
 		/// <summary>
-		/// 指定した座標のピクセルを返す
+		/// 指定した座標のピクセルを返す。改良版
 		/// </summary>
-		/// <returns>The pixel.</returns>
+		/// <returns>The pixel fx.</returns>
 		/// <param name="point">Point.</param>
 		private PixelData GetPixel(Vector2 point) {
 			XYIndex index = PointToIndex(point);
-			if(!_chunks.ContainsKey(index)) {
-				MakeChunk(index);
-			}
-			var chunk = _chunks[index];
-
+			PixelChunkData chunk = GetChunk(index);
 			int x, y;
 			PointToPixelIndex(point.x, point.y, out x, out y);
-
 			return chunk.GetCopiedPixel(x, y);
+		}
+
+		/// <summary>
+		/// 指定した座標のピクセルレコードを返す。改良版
+		/// </summary>
+		/// <returns>The pixel fx.</returns>
+		/// <param name="point">Point.</param>
+		private PixelDBRecord GetPixelRecord(Vector2 point) {
+			XYIndex index = PointToIndex(point);
+			PixelChunkData chunk = GetChunk(index);
+			int x, y;
+			PointToPixelIndex(point.x, point.y, out x, out y);
+			return _pixelDB.GetRecord(chunk.GetPixelID(x, y));
 		}
 
 		/// <summary>
@@ -232,14 +236,9 @@ namespace Common.PixelTerrain {
 		/// <param name="excavation">減少値</param>
 		public void ReduceDurability(Vector2 point, int excavation) {
 			XYIndex index = PointToIndex(point);
-			if(!_chunks.ContainsKey(index)) {
-				MakeChunk(index);
-			}
-			var chunk = _chunks[index];
-
+			var chunk = GetChunk(index);
 			int x, y;
 			PointToPixelIndex(point.x, point.y, out x, out y);
-
 			int id;
 			if(chunk.ReduceDurability(x, y, excavation, out id)) {
 				_changes.Add(new ChangedPixelData(point, id));
@@ -291,7 +290,7 @@ namespace Common.PixelTerrain {
 		public bool Ray(Vector2 origin, Vector2 direction, float distance, out HitPixelInfo hitInfo) {
 			Vector2 normRay = direction.normalized * _pixelSize;
 			float expDis = 0f;
-			Vector2 point = Vector2.zero;
+			Vector2 point = origin;
 			hitInfo = null;
 
 			for(; expDis < distance; expDis += _pixelSize) {
@@ -300,7 +299,30 @@ namespace Common.PixelTerrain {
 				var pixel = GetPixel(point);
 				if(pixel.isDraw) {
 					//衝突
-					hitInfo = new HitPixelInfo(pixel, origin, Vector2.Distance(origin, point));
+					hitInfo = new HitPixelInfo(pixel, point, direction.normalized, Vector2.Distance(origin, point));
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// ピクセル版のレイ
+		/// </summary>
+		/// <returns>The ray.</returns>
+		/// <param name="origin">Origin.</param>
+		/// <param name="direction">Direction.</param>
+		/// <param name="distance">Distance.</param>
+		public bool Ray(Vector2 origin, Vector2 direction, float distance) {
+			Vector2 normRay = direction.normalized * _pixelSize;
+			float expDis = 0f;
+			Vector2 point = origin;
+
+			for(; expDis < distance; expDis += _pixelSize) {
+				point.x += normRay.x;
+				point.y += normRay.y;
+				var pixelRec = GetPixelRecord(point);
+				if(pixelRec.isDraw) {
 					return true;
 				}
 			}

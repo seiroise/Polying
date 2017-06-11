@@ -154,7 +154,6 @@ Shader "CustomShader/PolygonAnimation" {
 				hsv.x = randRange(_HueMin, _HueMax, sum);
 				//彩度
 				hsv.y = randRange(_SatMin + offset, _SatMax + offset, sum);
-
 				//明度
 				hsv.z = randRange(_ValMin + offset, _ValMax + offset, sum);
 

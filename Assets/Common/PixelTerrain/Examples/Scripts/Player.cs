@@ -74,9 +74,17 @@ namespace Common.PixelTerrain {
 			if(Input.GetKeyDown(KeyCode.V)) {
 				if(_terrain) {
 					HitPixelInfo hitInfo;
+					for(int i = 0; i < 100; ++i) {
+						_terrain.Ray(transform.position, transform.right, 100f, out hitInfo);
+					}
+
+					var sw = System.Diagnostics.Stopwatch.StartNew();
 					if(_terrain.Ray(transform.position, transform.right, 100f, out hitInfo)) {
-						Debug.Log(string.Format("hit id:{0} point:{1}", hitInfo.pixel.id, hitInfo.pixelPoint));
+						sw.Stop();
+						Debug.Log(string.Format("hit id:{0} point:{1} dist:{2}", hitInfo.pixel.id, hitInfo.pixelPoint, hitInfo.distance));
+						Debug.Log("Raycast: " + sw.Elapsed + ", dist: " + hitInfo.distance);
 					} else {
+						sw.Stop();
 						Debug.Log("no hit");
 					}
 				}
