@@ -1,12 +1,13 @@
 fileFormatVersion: 2
 guid: 481bffce3767d4bbd817c092fad49b13
-timeCreated: 1495980695
+timeCreated: 1497583638
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
     21300000: AdditiveEffect_0
     21300002: AdditiveEffect_1
     21300004: AdditiveEffect_2
+    21300006: AdditiveEffect_3
   serializedVersion: 2
   mipmaps:
     mipMapMode: 0
@@ -89,6 +90,19 @@ TextureImporter:
         y: 8
         width: 162
         height: 162
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: AdditiveEffect_3
+      rect:
+        serializedVersion: 2
+        x: 428
+        y: 13
+        width: 48
+        height: 144
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
