@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace Polying.Common {
+namespace Polying.Common.Controller {
 
 	/// <summary>
 	/// Ridigbodyのコントローラ
@@ -9,15 +9,26 @@ namespace Polying.Common {
 	[RequireComponent(typeof(Rigidbody))]
 	public class RigidbodyController : MonoBehaviour {
 
-		[Header("Transformation Parameters")]
+		[Header("Parameters")]
 		[SerializeField, Range(0f, 100f)]
 		private float _moveSpeed = 10f;		//移動速度
+		[SerializeField, Range(0f, 1f)]
+		private float _accel = 1f;
 		[SerializeField, Range(0f, 500f)]
 		private float _rotateSpeed = 200f;	//回転速度
 
 		private Rigidbody _rbody;
 		private Vector2 _moveAxis;
 		private bool _locked;
+
+		public float accele {
+			get {
+				return _accel;
+			}
+			set {
+				_accel = Mathf.Clamp01(value);
+			}
+		}
 
 		public bool locked {
 			get {
@@ -57,7 +68,7 @@ namespace Polying.Common {
 		/// 移動処理
 		/// </summary>
 		private void Move() {
-			_rbody.velocity += transform.right * _moveSpeed * Time.deltaTime;
+			_rbody.velocity += transform.right * _moveSpeed * _accel * Time.deltaTime;
 		}
 
 		/// <summary>
