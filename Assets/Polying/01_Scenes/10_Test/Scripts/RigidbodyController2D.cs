@@ -19,13 +19,15 @@ namespace Polying.Test {
 		[SerializeField, Range(1f, 10f)]
 		private float _steering = 10f;				//曲がりやすさ
 		[SerializeField, Range(0f, 100f)]
-		private float _lowSpeedScaleThres = 10f;	//低速時の速度補正閾値
+		private float _lowSpeedScaleThres = 10f;    //低速時の速度補正閾値
 
 		[Header("Base Rotation Parameters")]
+		[SerializeField, Range(30f, 520f)]
+		private float _maxRotateAccele = 360f;		//最大回転加速度
 		[SerializeField, Range(1f, 100f)]
-		private float _rotateAccele = 30f;		//回転加速度
+		private float _rotateAccele = 30f;			//回転加速度
 		[SerializeField, Range(0.01f, 1f)]
-		private float _angulerDrag = 0.3f;		//回転の抵抗
+		private float _angulerDrag = 0.3f;			//回転の抵抗
 
 		protected Transform _trans;
 		protected Rigidbody2D _rbody;
@@ -46,7 +48,7 @@ namespace Polying.Test {
 
 		private void FixedUpdate() {
 			_speed = _rbody.velocity.magnitude;
-			_angulerSpeed = _rbody.angularVelocity = Mathf.Clamp(_rbody.angularVelocity, -180f, 180f);
+			_angulerSpeed = _rbody.angularVelocity = Mathf.Clamp(_rbody.angularVelocity, -_maxRotateAccele, _maxRotateAccele);
 			Move();
 			Rotate();
 		}
