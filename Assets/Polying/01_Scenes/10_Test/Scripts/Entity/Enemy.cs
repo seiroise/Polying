@@ -19,7 +19,8 @@ namespace Polying.Test {
 		private RigidbodyController2D _controller;
 		private Transform _target;
 
-		private void Awake() {
+		protected override void Awake() {
+			base.Awake();
 			_controller = GetComponent<RigidbodyController2D>();
 			if(_detector) {
 				_detector.onEntered.RemoveListener(OnEntityEntered);
@@ -29,7 +30,8 @@ namespace Polying.Test {
 			}
 		}
 
-		private void Start() {
+		protected override void Start() {
+			base.Start();
 			StartCoroutine(SequentiallyAct());
 		}
 
