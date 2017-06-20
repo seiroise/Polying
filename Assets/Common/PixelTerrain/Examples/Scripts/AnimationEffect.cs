@@ -25,17 +25,9 @@ namespace Common.PixelTerrain {
 			}
 		}
 
-		private void Update() {
-			if(_played) {
-				if(!_animation.isPlaying) {
-					Destroy(gameObject);
-				}
-			}
-		}
-
 		public void Play() {
 			_animation.Play();
-			_played = true;
+			Destroy(gameObject, _animation.clip.length);
 		}
 	}
 }
