@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-namespace Polying.World {
+namespace Polying.World.Explorer {
 
 	/// <summary>
 	/// 探索地図
@@ -15,11 +15,35 @@ namespace Polying.World {
 		}
 
 		/// <summary>
-		/// ノードの追加
+		/// 指定した座標のノードが含まれているか確認する
 		/// </summary>
-		/// <param name="node">Node.</param>
-		public void AddNode(ExploringNode node) {
-			
+		/// <returns>The contains.</returns>
+		public bool Contains(Vector2 point, float distance) {
+			foreach(var node in _nodeSet) {
+				if(Vector2.Distance(point, node.point) < distance) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// 指定した座標のノードを取得する
+		/// </summary>
+		/// <returns><c>true</c>, if get value was tryed, <c>false</c> otherwise.</returns>
+		/// <param name="point">Point.</param>
+		/// <param name="distance">Distance.</param>
+		public bool TryGetValue(Vector2 point, float distance, out ExploringNode node) {
+			node = null;
+			float minDis = distance, dis;
+			foreach(var n in _nodeSet) {
+				dis = Vector2.Distance(point, n.point);
+				if(dis < minDis) {
+					minDis = dis;
+					node = n;
+				}
+			}
+			return node != null;
 		}
 	}
 }

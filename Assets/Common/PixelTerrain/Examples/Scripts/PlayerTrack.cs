@@ -15,7 +15,9 @@ namespace Common.PixelTerrain {
 		private Vector3 _offset;
 
 		private void Update() {
-			transform.position = _target.position + _offset;
+			if(_target) {
+				transform.position = _target.position + _offset;
+			}
 		}
 	}
 }

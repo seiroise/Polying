@@ -288,7 +288,8 @@ namespace Common.PixelTerrain {
 		/// <param name="distance">Distance.</param>
 		/// <param name="hitInfo">Hit info.</param>
 		public bool Ray(Vector2 origin, Vector2 direction, float distance, out HitPixelInfo hitInfo) {
-			Vector2 normRay = direction.normalized * _pixelSize;
+			Vector2 normDir = direction.normalized;
+			Vector2 normRay = normDir * _pixelSize;
 			float expDis = 0f;
 			Vector2 point = origin;
 			hitInfo = null;
@@ -299,7 +300,7 @@ namespace Common.PixelTerrain {
 				var pixel = GetPixel(point);
 				if(pixel.isDraw) {
 					//衝突
-					hitInfo = new HitPixelInfo(pixel, point, direction.normalized, Vector2.Distance(origin, point));
+					hitInfo = new HitPixelInfo(pixel, point, normDir, Vector2.Distance(origin, point));
 					return true;
 				}
 			}

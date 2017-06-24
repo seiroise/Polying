@@ -14,7 +14,10 @@ namespace Common.Common {
 				if(!_instance) {
 					_instance = FindObjectOfType<T>();
 					if(!_instance) {
-						throw new Exception(typeof(T) + " is nothing.");
+						Type t = typeof(T);
+						Debug.LogError(string.Format("{0} is not exit!", t.Name));
+						var obj = new GameObject(t.Name, t);
+						_instance = obj.GetComponent<T>();
 					}
 				}
 				return _instance;
