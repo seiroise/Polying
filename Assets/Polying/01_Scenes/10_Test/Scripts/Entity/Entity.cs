@@ -7,16 +7,35 @@ namespace Polying.Test {
 	/// <summary>
 	/// ゲーム内の実態
 	/// </summary>
+	[RequireComponent(typeof(SpriteRenderer))]
 	public class Entity : MonoBehaviour {
+
+		public enum EntityType {
+			None,
+			Player,
+			NormalEnemy,
+			BossEnemy,
+			Object,
+			ExpObject
+		}
 
 		[Header("Status")]
 		[SerializeField, Range(10, 1000)]
 		private int _hp = 100;
+		[SerializeField]
+		private EntityType _type;
+
+		[Header("Die Effect Parameter")]
+		[SerializeField]
+		private EffectParams _dieEffectParams;
 
 		private int _currentHP;
 
+		private SpriteRenderer _renderer;
+		private ParticleSystem _emitter;
+
 		private HPEvent _onChangedHP;
-		private UnityEvent _onDied;
+		private EntityEvent _onDied;
 
 		public int hp {
 			get {
@@ -28,12 +47,17 @@ namespace Polying.Test {
 				return _currentHP;
 			}
 		}
+		public EntityType type {
+			get {
+				return _type;
+			}
+		}
 		public HPEvent onChangedHP {
 			get {
 				return _onChangedHP;
 			}
 		}
-		public UnityEvent onDie {
+		public EntityEvent onDied {
 			get {
 				return _onDied;
 			}
@@ -42,10 +66,13 @@ namespace Polying.Test {
 		protected virtual void Awake() {
 			_currentHP = _hp;
 			_onChangedHP = new HPEvent();
+			_onDied = new EntityEvent();
+			_renderer = GetComponent<SpriteRenderer>();
+			_emitter = FindObjectOfType<ParticleSystem>();
 		}
 
 		protected virtual void Start() {
-			
+			EntityManager.instance.RegistEntity(this);
 		}
 
 		/// <summary>
@@ -56,13 +83,12 @@ namespace Polying.Test {
 		public bool DecreaseHP(int damage) {
 			if(_currentHP <= 0) return false;
 			_currentHP -= damage;
-			if(_onChangedHP != null) {
-				_onChangedHP.Invoke(_currentHP, _hp);
-			}
+			_onChangedHP.Invoke(_currentHP, _hp);
 			if(_currentHP <= 0) {
 				_currentHP = 0;
-				if(_onDied != null) {
-					_onDied.Invoke();
+				_onDied.Invoke(this);
+				if(_emitter) {
+					EffectFunctions.EmitParticle(_emitter, _dieEffectParams, transform, _renderer.sprite);
 				}
 				Destroy(gameObject);
 				return true;

@@ -1,4 +1,6 @@
-﻿//2016.12.02
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+//2016.12.02
 //-------------------------------------
 //三角ポリゴンごとに描画する色を変えるシェーダ
 //HSV指定
@@ -127,7 +129,7 @@ Shader "CustomShader/PolygonAnimation" {
 			//バーテックスシェーダ
 			v2f vert(appdata v) {
 				v2f o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv;
 				o.normal = v.normal;
 				o.localPosition = v.vertex.xyz;

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 
 namespace Polying.Test {
@@ -43,7 +43,7 @@ namespace Polying.Test {
 		/// 確認と発射
 		/// </summary>
 		private void CheckAndLaunch() {
-			if(_timer >= _shotInterval && _owner.SubAmmo(_useAmmo)) {
+			if(_timer >= _shotInterval && _owner.UseAmmo(_useAmmo)) {
 				Launch();
 			}
 		}

@@ -57,18 +57,22 @@ namespace Polying.Test {
 		/// </summary>
 		/// <returns><c>true</c>, if ammo was subed, <c>false</c> otherwise.</returns>
 		/// <param name="use">Use.</param>
-		public bool SubAmmo(Ammo use) {
+		public bool UseAmmo(Ammo use) {
 			if(_ammo.Sub(use)) {
-				if(_onChangedAmmo != null) {
-					_onChangedAmmo.Invoke(_ammo, _maxAmmo);
-				}
+				_onChangedAmmo.Invoke(_ammo, _maxAmmo);
 				return true;
 			} else {
-				if(_onNotEnoughAmmo != null) {
-					_onNotEnoughAmmo.Invoke(_ammo, _maxAmmo);
-				}
+				_onNotEnoughAmmo.Invoke(_ammo, _maxAmmo);
 				return false;
 			}
+		}
+
+		/// <summary>
+		/// 弾薬を増やす
+		/// </summary>
+		public void AddAmmo(Ammo add) {
+			_ammo.AddMax(add, _maxAmmo);
+			_onChangedAmmo.Invoke(_ammo, _maxAmmo);
 		}
 
 		/// <summary>

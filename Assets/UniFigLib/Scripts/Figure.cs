@@ -394,7 +394,7 @@ namespace UniFigLib {
 			mesh.colors = _colors;
 			mesh.SetIndices(indices, MeshTopology.Triangles, 0);
 
-			mesh.Optimize();
+			;
 			mesh.RecalculateNormals();
 			mesh.RecalculateBounds();
 
@@ -413,7 +413,7 @@ namespace UniFigLib {
 			mesh.colors = _colors;
 			mesh.SetIndices(indices.Take(i * 3).ToArray(), MeshTopology.Triangles, 0);
 
-			mesh.Optimize();
+			;
 			mesh.RecalculateNormals();
 			mesh.RecalculateBounds();
 

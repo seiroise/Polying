@@ -10,31 +10,29 @@ namespace Polying.Test {
 	[RequireComponent(typeof(Collider2D))]
 	public class EntityDetector : MonoBehaviour {
 
-		public class OnDetected : UnityEvent<Entity> { }
-
 		[SerializeField]
 		private string _filterTag;
 
-		private OnDetected _onEntered;
-		private OnDetected _onExited;
+		private EntityEvent _onEntered;
+		private EntityEvent _onExited;
 
 		private Entity _detected;
 		private Collider2D _detectedCollider;
 
-		public OnDetected onEntered {
+		public EntityEvent onEntered {
 			get {
 				return _onEntered;
 			}
 		}
-		public OnDetected onExited {
+		public EntityEvent onExited {
 			get {
 				return _onExited;
 			}
 		}
 
 		private void Awake() {
-			_onEntered = new OnDetected();
-			_onExited = new OnDetected();
+			_onEntered = new EntityEvent();
+			_onExited = new EntityEvent();
 		}
 
 		private void OnTriggerEnter2D(Collider2D co) {

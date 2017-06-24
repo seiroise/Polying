@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Text;
 
 namespace Polying.Test {
 
@@ -38,9 +39,9 @@ namespace Polying.Test {
 		/// <param name="add">Add.</param>
 		/// <param name="max">Max.</param>
 		public void AddMax(Ammo add, Ammo max) {
-			bullet = Mathf.Max(bullet + add.bullet, max.bullet);
-			grenade = Mathf.Max(grenade + add.grenade, max.grenade);
-			energy = Mathf.Max(energy + add.energy, max.energy);
+			bullet = Mathf.Min(bullet + add.bullet, max.bullet);
+			grenade = Mathf.Min(grenade + add.grenade, max.grenade);
+			energy = Mathf.Min(energy + add.energy, max.energy);
 		}
 
 		/// <summary>
@@ -59,6 +60,24 @@ namespace Polying.Test {
 			} else {
 				return false;
 			}
+		}
+
+		/// <summary>
+		/// 文字列出力
+		/// </summary>
+		/// <returns>A <see cref="T:System.String"/> that represents the current <see cref="T:Polying.Test.Ammo"/>.</returns>
+		public override string ToString() {
+			var sb = new StringBuilder();
+			if(bullet > 0) {
+				sb.AppendLine("Bullet +" + bullet);
+			}
+			if(grenade > 0) {
+				sb.AppendLine("Grenade +" + grenade);
+			}
+			if(energy > 0) {
+				sb.AppendLine("Energy +" + energy);
+			}
+			return sb.ToString();
 		}
 	}
 }
